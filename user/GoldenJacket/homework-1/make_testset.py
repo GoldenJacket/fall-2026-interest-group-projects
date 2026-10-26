@@ -7,9 +7,9 @@ so it cannot tell a better retriever from a worse one.
 How: sample passages from page 2 onward across every track, ask the allowed gemma3:12b model to
 write one question each passage answers without naming the paper, and keep the source page as the
 gold judgment (a known-item search). Questions are split by hash into dev (for tuning) and test
-(evaluation). The submitted study examined the test split twice; see the README's disclosure.
+(reported once), so improvements are not tuned on the numbers we report.
 
-    uv run --project ../../../homework_1/clef-rag python make_testset.py --n 240
+    uv run --project ../../../homework-1/clef-rag python make_testset.py --n 240
 """
 
 import argparse

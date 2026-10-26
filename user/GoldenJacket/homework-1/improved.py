@@ -3,8 +3,8 @@
 Only retrieval changes: routing, the answer prompt, citation repair, and the models are the
 starter's code. The chosen settings live in results/best_config.json (written after the dev sweep).
 
-    uv run --project ../../../homework_1/clef-rag python improved.py ask "question" [--track BioASQ]
-    uv run --project ../../../homework_1/clef-rag python improved.py compare questions/my_questions.json
+    uv run --project ../../../homework-1/clef-rag python improved.py ask "question" [--track BioASQ]
+    uv run --project ../../../homework-1/clef-rag python improved.py compare questions/my_questions.json
 """
 
 import argparse

@@ -1,6 +1,6 @@
 """Shared paths and loaders. Everything runs inside the starter's environment:
 
-    uv run --project ../../../homework_1/clef-rag python <script>.py
+    uv run --project ../../../homework-1/clef-rag python <script>.py
 """
 
 import json
@@ -8,7 +8,7 @@ import sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-STARTER = HERE.parents[2] / "homework_1" / "clef-rag"
+STARTER = HERE.parents[2] / "homework-1" / "clef-rag"
 INDEX_DIR = STARTER / "index"
 PILOT_QUESTIONS = STARTER / "eval" / "questions.json"
 TESTSET = HERE / "eval" / "testset.json"
