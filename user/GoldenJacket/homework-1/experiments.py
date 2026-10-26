@@ -1,8 +1,8 @@
-"""Retrieval experiments: one factor at a time on dev, combine the winners, report once on test.
+"""Retrieval experiments: one factor at a time on dev, combine the winners, report exploratory comparisons on the twice-examined test split.
 
-    uv run --project ../../../homework-1/clef-rag python experiments.py parity
-    uv run --project ../../../homework-1/clef-rag python experiments.py dev
-    uv run --project ../../../homework-1/clef-rag python experiments.py final --best '<json overrides>'
+    uv run --project ../../../homework_1/clef-rag python experiments.py parity
+    uv run --project ../../../homework_1/clef-rag python experiments.py dev
+    uv run --project ../../../homework_1/clef-rag python experiments.py final --best '<json overrides>'
 
 Scoring reuses the starter's ir-measures code (clef_rag.metrics) unchanged: unique paper/PDF-page
 pairs in first-retrieved order, binary relevance, cutoffs 1/3/6.

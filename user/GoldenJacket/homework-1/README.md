@@ -1,11 +1,13 @@
 # Homework 1: Zachary Wallace (GoldenJacket)
 
+> **Maintainer integration — 2026-10-26:** Paths and reproduction commands below were updated for the shared starter's `homework_1/` directory, and the image evaluator now skips missing checkpoint files explicitly. Reporting language was clarified to reflect the submission's disclosed second test evaluation, incomplete relevance labels, and finite image sample. Retrieval algorithms, committed results, and historical run artifacts were not regenerated; these integration corrections are not new student experiments.
+
 | Part | Result |
 |---|---|
-| **2 · CLEF RAG** | On 120 held-out questions, my retriever raises MRR@6 from 0.270 to 0.589 and nDCG@6 from 0.373 to 0.627 (both p < 0.0001), and Eric's pilot questions still retrieve everything they did before. |
-| **1 · fashion-fm** | I trained 25 epochs on PACE ICE (job 6366980, NVIDIA A40, 8 min 17 s) and again on my Mac as a check. Both reach 98.8% condition accuracy on the starter's evaluator, against 96.9% for the provided `fashion-fm-best.pt`, with no copies of training images. |
+| **2 · CLEF RAG** | On the 120-question test split, my retriever raises MRR@6 from 0.270 to 0.589 and nDCG@6 from 0.373 to 0.627 (both exploratory p < 0.0001; the test split was examined twice), and Eric's pilot questions still retrieve everything they did before. |
+| **1 · fashion-fm** | I trained 25 epochs on PACE ICE (job 6366980, NVIDIA A40, 8 min 17 s) and again on my Mac as a check. Both reach 98.8% condition accuracy on the starter's evaluator, against 96.9% for the provided `fashion-fm-best.pt`, with zero exact training copies among the 160 samples evaluated for each model. |
 
-I left the starter code under `homework-1/` untouched; everything in this folder imports it.
+I left the shared starter code untouched; everything in this folder imports it. The shared starter is now under `homework_1/`, while this submission remains under `user/GoldenJacket/homework-1/`.
 
 ---
 
@@ -15,13 +17,13 @@ I left the starter code under `homework-1/` untouched; everything in this folder
 
 When I ran the starter's retrieval evaluation, I realized it could not answer that question for me. It scored a perfect 1.0 on every metric (12 of 12 questions, Hit@1, MRR, and nDCG@3 all at 1.0), and a perfect score leaves no room to show an improvement. Most of the pilot questions name their paper, the answer is usually on page 1, and the retriever always puts the top paper's first page in slot 1. In short, it scores 1.0 no matter how good the search underneath is. Grading the system this way is like judging my putting on two-foot putts; every one drops, so it tells me nothing about my stroke.
 
-So I built a harder test set (`make_testset.py`, saved in `eval/testset.json`). I pulled passages from page 2 onward, taking turns across all 16 CLEF labs and using at most one passage per paper, and I skipped reference lists and bare tables. For each passage, the allowed `gemma3:12b` model wrote one question that the passage answers on its own, without naming the paper, the team, or the authors; a filter caught 7 that named the paper anyway, and I threw those out. Each question has exactly one right answer: the page it came from. That gave me 233 questions, which I split into a dev set (113) for every decision I made and a test set (120) that I only used to report the final numbers.
+So I built a harder test set (`make_testset.py`, saved in `eval/testset.json`). I pulled passages from page 2 onward, taking turns across all 16 CLEF labs and using at most one passage per paper, and I skipped reference lists and bare tables. For each passage, the allowed `gemma3:12b` model wrote one question that the passage answers on its own, without naming the paper, the team, or the authors; a filter caught 7 that named the paper anyway, and I threw those out. Each question has one annotated source page: the page it came from. Other pages may also answer it. That gave me 233 questions, which I split into a dev set (113) for every decision I made and a test set (120). I examined the test split twice, including after revising the opening-passage placement; the reported comparisons are therefore exploratory.
 
 I scored everything with the starter's own metric code (`clef_rag.metrics`), unchanged, so my numbers mean the same thing as Eric's. The two I care about most are MRR@6 and nDCG@6. A RAG answer can only cite what lands in its 6 passages, and these two reward putting the right one near the top. I also report Hit@6, and a paper-level hit that asks whether the right paper showed up at all. For every comparison I ran a paired randomization test, which asks how often a difference this large would show up by chance.
 
 Before trusting any of it, I made sure my baseline really was the baseline. To test dozens of settings quickly, `engine.py` rebuilds the starter's retriever from the stored vectors. I checked it against the starter's real retriever on 52 questions, and the results matched on all 52.
 
-My process was simple: change one thing at a time on dev, combine what worked on dev, run test once, and use Eric's pilot questions to make sure nothing broke.
+I changed one thing at a time on dev, combined what worked, and checked the pilot questions. After the first test run and the pilot regression, I revised the opening-passage placement and evaluated the test split again, as disclosed below.
 
 ### What I Found
 
@@ -48,7 +50,7 @@ The reranking result was the most thought-provoking one for me. A 12 billion par
 
 My improved system makes only the two changes above: exact search, and the opening passage in the last slot. Everything else is the starter's (keyword plus embedding search, merged 0.5/0.5 with c = 60, 20 candidates each). The settings are in `results/best_config.json`.
 
-**Test set (120 held-out questions)**
+**Test split (120 questions; exploratory results after two evaluations)**
 
 | System | Hit@1 | Hit@6 | MRR@6 | nDCG@6 | Paper hit@6 |
 |---|---|---|---|---|---|
@@ -57,7 +59,7 @@ My improved system makes only the two changes above: exact search, and the openi
 | Opening passage last only | 0.367 | 0.683 | 0.488 | 0.537 | 0.783 |
 | **Improved (both)** | **0.500** | **0.742** | **0.589** | **0.627** | **0.833** |
 
-MRR@6 more than doubles. Against the baseline, the gains in MRR@6 and nDCG@6 are significant (p < 0.0001), and so is Hit@6 (p = 0.016); each change is also significant on its own. Question by question, 87 improved, 1 got worse, and 32 stayed the same.
+MRR@6 more than doubles. Against the baseline, the paired tests give p < 0.0001 for MRR@6 and nDCG@6 and p = 0.016 for Hit@6. These are exploratory comparisons because the test split was examined twice; the individual-change comparisons have the same limitation. Question by question, 87 improved, 1 got worse, and 32 stayed the same.
 
 Eric's pilot questions still pass. Hit@6, Recall@6, and the paper-level hit all stay at 1.000. MRR@6 drops from 1.000 to 0.867 (p = 0.50, not significant) because the two overview questions now find their page 1 answer in slot 6 instead of slot 1.
 
@@ -79,7 +81,7 @@ Both systems failed in the same places. "Which papers fine-tuned with LoRA…" g
 
 The test questions lean toward keywords. The model wrote each question while looking at its passage, so the question tends to reuse the passage's words, which favors keyword search. That likely explains why embeddings alone look weak and why the keyword-heavy weighting helped on dev. The two changes I kept do not depend on that bias: exact search simply finds the true closest passages, and moving the opening passage has nothing to do with either search.
 
-Each question has only one right page. A few questions are vague enough that another paper also answers them (a label smoothing value, for example). That adds the same noise to every system, so the absolute scores run low, but the comparisons stay fair.
+Each question has only one annotated source page. A few questions are vague enough that another paper also answers them (a label smoothing value, for example). Incomplete relevance labels can undercount correct retrievals and may affect systems differently, so the scores and comparisons should be interpreted with that limitation.
 
 I looked at the test set twice. After my first test run showed the pilot problem, I added the "opening passage last" version and ran test again. I chose it because it fixed the pilot, not because of its test score, and its test MRR (0.589) is essentially the same as the earlier version's (0.590).
 
@@ -88,22 +90,30 @@ My `gemma3:12b` is a newer build (`b92b2185…`) than the one in the starter's r
 ### How to Run
 
 ```bash
-# from homework-1/clef-rag: index the corpus (the starter's own steps)
-uv sync --locked && ollama pull gemma3:12b && ollama pull embeddinggemma:300m
-unzip data.zip && uv run clef-rag ingest
+# From the repository root: set up the shared starter environment.
+cd homework_1/clef-rag
+uv sync --locked
+ollama pull gemma3:12b
+ollama pull embeddinggemma:300m
 
-# from this folder (uses the starter's environment)
-R="uv run --project ../../../homework-1/clef-rag python"
-$R make_testset.py --n 240          # writes eval/testset.json (already committed)
-$R experiments.py parity            # my rebuild vs the starter retriever
-$R experiments.py ann               # HNSW recall vs exact search
-$R experiments.py dev               # one change at a time on dev
-$R combos.py                        # combinations + gemma rerank on dev
-$R intro_check.py                   # opening passage placement (dev, pilot, test)
-$R experiments.py final --best '{"name":"improved","intro":"last","dense_search":"exact"}' \
+# Explicit corpus download; no Git LFS ZIP is required.
+python3 download_papers.py
+uv run clef-rag ingest
+
+# Enter the submission folder (uses the starter's environment).
+cd ../../user/GoldenJacket/homework-1
+run_rag() { uv run --project ../../../homework_1/clef-rag python "$@"; }
+# Optional: regenerate questions; overwrites the already committed test set.
+# run_rag make_testset.py --n 240
+run_rag experiments.py parity            # my rebuild vs the starter retriever
+run_rag experiments.py ann               # HNSW recall vs exact search
+run_rag experiments.py dev               # one change at a time on dev
+run_rag combos.py                        # combinations + gemma rerank on dev
+run_rag intro_check.py                   # opening passage placement (dev, pilot, test)
+run_rag experiments.py final --best '{"name":"improved","intro":"last","dense_search":"exact"}' \
    --extra '[{"name":"exact only","dense_search":"exact"},{"name":"intro last only","intro":"last"}]'
-$R improved.py ask "How did BioASQ teams generate exact answers?" --track BioASQ
-$R improved.py compare questions/my_questions.json
+run_rag improved.py ask "How did BioASQ teams generate exact answers?" --track BioASQ
+run_rag improved.py compare questions/my_questions.json
 ```
 
 | File | What it does |
@@ -130,7 +140,9 @@ I also trained the same setup on my Mac (Apple M4 Pro, 48 GB) as a check. The st
 
 ### Evaluation
 
-`fashion/evaluate.py` runs the starter's own evaluator on all three models, so they all face the same judge: one independent classifier (90.0% accurate on real FashionMNIST images), the same random seed, 16 samples per class, 40 steps, and guidance 2.0.
+The original three-model comparison used the starter's own evaluator: one independent classifier (90.0% accurate on real FashionMNIST images), the same random seed, 16 samples per class, 40 steps, and guidance 2.0. The current `fashion/evaluate.py` evaluates only checkpoint files that exist locally, prints every missing/skipped path, and writes a summary containing only the evaluated models. It errors if none are available; missing models are not comparisons.
+
+The historical metrics below are committed run evidence. The original Mac and PACE checkpoint weights are not distributed in this submission. Retrain or restore separately retained weights to run evaluation again; retraining creates new runs and need not reproduce these exact metrics.
 
 | Model | Condition accuracy | Mean target prob. | Within-class diversity | Mean distance to nearest training image | Exact copies |
 |---|---|---|---|---|---|
@@ -138,7 +150,7 @@ I also trained the same setup on my Mac (Apple M4 Pro, 48 GB) as a check. The st
 | Mine on Mac (25 epochs) | 98.8% (158/160) | 0.957 | 0.357 | 0.079 | 0 |
 | Provided `fashion-fm-best.pt` | 96.9% (155/160) | 0.927 | 0.327 | 0.104 | 0 |
 
-The PACE and Mac runs land on the same numbers; same swing, different course. That tells me the result comes from the training recipe and not the hardware. Against the provided model, mine is comparable, since three samples out of 160 is not a meaningful difference. Mine is a bit more varied within each class and sits a bit closer to the training images, with no copies. The samples also score higher than the classifier does on real images, which tells me they are clean, typical examples of each class rather than odd ones.
+The PACE and Mac runs land on the same numbers; same swing, different course. That tells me the result comes from the training recipe and not the hardware. Against the provided model, mine is comparable, since three samples out of 160 is not a meaningful difference. Mine is a bit more varied within each class and sits a bit closer to the training images, with zero exact training copies among the 160 evaluated samples per model. This does not establish that the models cannot memorize training images. The samples also score higher than the classifier does on real images, which tells me they are clean, typical examples of each class rather than odd ones.
 
 | All ten classes (Mac run) | Epoch 1 → epoch 25 (Mac) | Epoch 25 (PACE) |
 |---|---|---|
@@ -149,23 +161,30 @@ The PACE and Mac runs land on the same numbers; same swing, different course. Th
 On PACE ICE (after `ssh <gt-username>@login-ice.pace.gatech.edu` on the GT VPN, with `uv` in `~/.local/bin`):
 
 ```bash
-cd homework-1/fashion-fm
+cd homework_1/fashion-fm
 sed "s|^  epochs: 1$|  epochs: 25|" configs/train.yml > configs/train-25.yml
 cp ../../user/GoldenJacket/homework-1/fashion/pace/job-25-anygpu.sbatch .
 mkdir -p logs && sbatch job-25-anygpu.sbatch
 squeue -u $USER
 ```
 
-On a Mac:
+After that job has completed, copy its output into the optional PACE comparison location. From the repository root on the same machine (or after transferring the completed checkpoint back):
+
+```bash
+mkdir -p user/GoldenJacket/homework-1/fashion/pace
+cp homework_1/fashion-fm/outputs/fashion-fm/latest.pt user/GoldenJacket/homework-1/fashion/pace/latest.pt
+```
+
+On a Mac, from `user/GoldenJacket/homework-1/`:
 
 ```bash
 cd fashion
 uv venv --python 3.13 .venv
 uv pip install --python .venv/bin/python "torch>=2.10,<2.11" "torchvision>=0.25,<0.26" "diffusers[torch]>=0.37" click matplotlib numpy pillow pydantic pyyaml rich tqdm
-uv pip install --python .venv/bin/python --no-deps -e ../../../../homework-1/fashion-fm
+uv pip install --python .venv/bin/python --no-deps -e ../../../../homework_1/fashion-fm
 .venv/bin/fashion-fm train --config train.yml
 .venv/bin/fashion-fm generate --checkpoint outputs/fashion-fm/latest.pt
-.venv/bin/python evaluate.py      # scores Mac, PACE (fashion/pace/latest.pt), and the provided checkpoint
+.venv/bin/python evaluate.py      # evaluates available files; missing PACE/provided weights are reported and skipped
 ```
 
 The data, the environments, and the model weights are git-ignored, as `user/README.md` asks.
